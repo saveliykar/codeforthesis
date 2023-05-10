@@ -1,0 +1,62 @@
+#this is python programming code. The code was generated to extract the necessary data
+#firstly, one should upload the data file, which is an RLMS extract with particular data for years 2019-2020
+#run this block of code
+
+import pandas as pd
+import numpy as np
+
+df = pd.read_stata('workings file 2.dta')
+
+df['sub'] = np.where(df['J10'].between(4500,12130)&(df['year']==2019),
+                     1,0)
+double_ids = df.groupby('idind', 
+                        as_index=False
+).agg({
+    'year':lambda x: len(list(x))}
+)
+double_ids = double_ids.loc[
+    double_ids['year']==2
+]['idind'].unique()
+df['both_years'] = np.where(
+    df['idind'].isin(double_ids),
+    1,0
+)
+#secondly, run the following block of code
+treated_ids = df.loc[
+    df['sub']==1
+    ]['idind'].unique()
+df['treatment'] = np.where(
+    df['idind'].isin(treated_ids)&
+    (df['both_years']==1),
+    1,0)
+ #then, run the following block
+ rich = df.loc[
+    (df['year']==2020)&
+    (df['J10']>12130)
+]['idind'].unique()
+poor = df.loc[
+    (df['year']==2020)&
+    (df['J10'].between(4500,12130))
+]['idind'].unique()
+
+treatment_exit = df.loc[
+    (df['both_years']==1)&
+    (df['treatment']==1)&
+    (df['idind'].isin(rich))
+]['idind'].unique()
+treatment_remained = df.loc[
+    (df['both_years']==1)&
+    (df['treatment']==1)&
+    (df['idind'].isin(poor))
+]['idind'].unique()
+
+df['treatment_exit'] = np.where(
+    df.idind.isin(treatment_exit),
+    1,0
+)
+df['treatment_remained'] = np.where(
+    df.idind.isin(poor),
+    1,0
+)
+#lastly, transfer the generated variables into a new .dta file using the following block of code:
+df.to_stata('transformed.dta')
